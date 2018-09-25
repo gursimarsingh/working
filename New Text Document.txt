@@ -1,0 +1,70 @@
+import cv2
+import numpy as np
+import os
+import sys
+from skimage.feature import canny
+folder = 'crop'
+files  = os.listdir(folder)
+files.sort()
+folder2 = 'crop_neg'
+files2 =  os.listdir(folder2)
+files2.sort()
+"""
+nbins_r  = 5
+nangbins =12
+r_inner = 0.125
+r_outer = 2.0
+"""
+cn=0
+for f in files:
+    for f2 in files2:
+        #print f2
+        img1  = cv2.imread(os.path.join(folder,f),0).astype('uint8')
+        img2  = cv2.imread(os.path.join(folder2,f2),0).astype('uint8')
+        img1 = cv2.copyMakeBorder(img1,5,5,5,5,cv2.BORDER_CONSTANT,value=0)
+        img2 = cv2.copyMakeBorder(img2,5,5,5,5,cv2.BORDER_CONSTANT,value=0)
+
+        img1 = cv2.resize(img1,(80,80),cv2.INTER_AREA)
+        img2 = cv2.resize(img2,(80,80),cv2.INTER_AREA)
+
+        sc = cv2.createShapeContextDistanceExtractor(nAngularBins = 12,nRadialBins = 5,innerRadius =1,outerRadius = 5)
+        sc.setRotationInvariant(True)
+        #s =max([ch,cw])
+        #crop = cv2.resize(crop0,(s,s),interpolation=cv2.INTER_AREA)
+        img1=  np.where(img1>128,255,0).astype('uint8')
+        img2=  np.where(img2>128,255,0).astype('uint8')
+
+        #img1 = img1/255
+        #img2= img2/255
+        edges1 = canny(img1, sigma=3, low_threshold=10, high_threshold=100)
+        edges2 = canny(img2, sigma=3, low_threshold=10, high_threshold=100)
+        edges1 = (edges1*255).astype('uint8')
+        edges2 = (edges2*255).astype('uint8')
+       # cv2.imshow('e1',edges1)
+       # cv2.imshow('e2',edges2)
+       # k = cv2.waitKey(0)
+       # if k==ord('e'):
+       #     cv2.destroyAllWindows()
+       #     sys.exit(-1)
+        _,cnts0, _ = cv2.findContours(edges1.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        cnts0 = sorted(cnts0, key = cv2.contourArea, reverse = True)
+        cnt0 = cnts0[0]
+        _,cnts1, _ = cv2.findContours(edges2.copy(), cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+        cnts1 = sorted(cnts1, key = cv2.contourArea,reverse=True)
+        cnt1 = cnts1[0]
+        #print cnt1
+        #print cnt0.shape[0]
+        #print cnt1.shape[0]
+        if abs(cnt1.shape[0]-cnt0.shape[0]) < 20:
+        #sc.setImages(img1,img2)
+            distance = sc.computeDistance(cnt0,cnt1)
+            if distance<20 and distance>0:
+                cn = cn+1
+                print distance
+                print 'match' + f + '_' +f2
+                break
+
+print cn
+
+
+
